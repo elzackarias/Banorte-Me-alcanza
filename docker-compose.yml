@@ -1,0 +1,42 @@
+services:
+  backend:
+    build: .
+    ports:
+      - "10000:10000"
+    environment:
+      PORT: "10000"
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      GOOGLE_AI_STUDIO_API_KEY: ${GOOGLE_AI_STUDIO_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-opus-5}
+      JWT_SECRET: ${JWT_SECRET}
+      BANK_DB_PATH: /data/banco.db
+    volumes:
+      - banco-db:/data
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Debe ser una URL que el NAVEGADOR del cliente pueda resolver
+        # (IP/hostname del homelab, tailnet, etc.) -no "backend", que solo
+        # existe dentro de la red de docker compose. Queda horneada en el
+        # bundle: si cambia, hay que reconstruir la imagen (docker compose
+        # up --build frontend).
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:10000}
+    ports:
+      # 8080 ya lo usa 'glance' en el homelab (otro servicio, no de este
+      # proyecto) — si el túnel público hacia frontend.jzackarias.lat apunta
+      # a 8080 específicamente, hay que actualizarlo también del lado del
+      # túnel al cambiar este puerto.
+      - "8081:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  banco-db:

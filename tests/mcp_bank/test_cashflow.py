@@ -1,0 +1,140 @@
+import pytest
+from me_alcanza.mcp_bank.cashflow import simular_flujo_de_caja
+
+INGRESOS = [
+    {"monto": 12500.00, "proxima_fecha": "2026-09-12"},
+]
+GASTOS = [
+    {"monto": 320.00, "proxima_fecha": "2026-09-14"},
+    {"monto": 450.00, "proxima_fecha": "2026-09-14"},
+    {"monto": 2400.00, "proxima_fecha": "2026-09-15"},
+    {"monto": 2400.00, "proxima_fecha": "2026-09-15"},
+]
+
+
+def test_alcanza_con_margen_amplio():
+    resultado = simular_flujo_de_caja(
+        saldo_actual=500.00,
+        ingresos=INGRESOS,
+        gastos=GASTOS,
+        hoy="2026-09-11",
+        fecha_objetivo="2026-10-13",
+        monto_objetivo=1000.00,
+    )
+    assert resultado["alcanza"] is True
+    assert resultado["apartado_sugerido"] is None
+    assert resultado["saldo_minimo_proyectado"] == pytest.approx(500.0)
+
+
+def test_no_alcanza_sugiere_apartado():
+    resultado = simular_flujo_de_caja(
+        saldo_actual=500.00,
+        ingresos=INGRESOS,
+        gastos=GASTOS,
+        hoy="2026-09-11",
+        fecha_objetivo="2026-10-13",
+        monto_objetivo=8000.00,
+    )
+    assert resultado["alcanza"] is False
+    assert resultado["margen"] == pytest.approx(-570.0)
+    assert resultado["fecha_critica"] == "2026-10-13"
+    apartado = resultado["apartado_sugerido"]
+    assert apartado is not None
+    assert apartado["periodicidad"] == "semanal"
+    assert apartado["num_periodos"] == 4
+    assert apartado["monto_por_periodo"] == pytest.approx(142.5)
+
+
+def test_fecha_critica_puede_ser_anterior_a_la_fecha_objetivo():
+    # El valle ocurre al pagar los gastos fijos (9/15); un ingreso posterior
+    # recupera el saldo antes de llegar a fecha_objetivo, así que el mínimo
+    # histórico (y su fecha) quedan fijados en el valle, no en la meta.
+    resultado = simular_flujo_de_caja(
+        saldo_actual=1000.00,
+        ingresos=[{"monto": 6000.00, "proxima_fecha": "2026-09-20"}],
+        gastos=GASTOS,
+        hoy="2026-09-11",
+        fecha_objetivo="2026-10-13",
+        monto_objetivo=100.00,
+    )
+    assert resultado["alcanza"] is False
+    assert resultado["fecha_critica"] == "2026-09-15"
+    assert resultado["margen"] == pytest.approx(-4570.0)
+
+
+def test_fecha_objetivo_en_el_pasado_lanza_error():
+    with pytest.raises(ValueError):
+        simular_flujo_de_caja(
+            saldo_actual=500.00,
+            ingresos=INGRESOS,
+            gastos=GASTOS,
+            hoy="2026-09-11",
+            fecha_objetivo="2026-01-01",
+            monto_objetivo=100.00,
+        )
+
+
+def test_eventos_posteriores_a_fecha_objetivo_se_ignoran():
+    resultado = simular_flujo_de_caja(
+        saldo_actual=100.00,
+        ingresos=[{"monto": 5000.00, "proxima_fecha": "2026-12-01"}],
+        gastos=[],
+        hoy="2026-09-11",
+        fecha_objetivo="2026-10-13",
+        monto_objetivo=50.00,
+    )
+    assert resultado["alcanza"] is True
+    assert resultado["margen"] == pytest.approx(50.0)
+
+
+def test_ingreso_y_gasto_mismo_dia_ingreso_se_aplica_primero():
+    # Verifies that when an ingreso and gasto share the same date, the ingreso
+    # is processed first (per the sort key: 0 for income, 1 for expenses).
+    # With these numbers, the ordering is observable:
+    # - Income first: 100 + 300 - 200 = 200, min = 100 (never went negative)
+    # - Expense first: 100 - 200 + 300 = 200, min = -100 (would dip below zero)
+    resultado = simular_flujo_de_caja(
+        saldo_actual=100.00,
+        ingresos=[{"monto": 300.00, "proxima_fecha": "2026-09-12"}],
+        gastos=[{"monto": 200.00, "proxima_fecha": "2026-09-12"}],
+        hoy="2026-09-11",
+        fecha_objetivo="2026-09-30",
+        monto_objetivo=0.00,
+    )
+    # If the sort key worked correctly (income before expense), min should be 100
+    # If expenses were somehow processed first, min would be -100
+    assert resultado["saldo_minimo_proyectado"] == pytest.approx(100.0)
+    assert resultado["margen"] == pytest.approx(100.0)
+    assert resultado["alcanza"] is True
+
+
+def test_serie_incluye_punto_inicial_cada_evento_y_punto_final():
+    resultado = simular_flujo_de_caja(
+        saldo_actual=500.00,
+        ingresos=INGRESOS,
+        gastos=GASTOS,
+        hoy="2026-09-11",
+        fecha_objetivo="2026-09-15",
+        monto_objetivo=1000.00,
+    )
+    serie = resultado["serie"]
+    # Punto inicial (hoy, saldo actual) + 1 ingreso + 4 gastos + punto final
+    # (fecha_objetivo, tras restar monto_objetivo) = 7 puntos.
+    assert len(serie) == 7
+    assert serie[0] == {"fecha": "2026-09-11", "saldo": 500.0}
+    assert serie[-1]["fecha"] == "2026-09-15"
+    # saldo final = 500 + 12500 - 320 - 450 - 2400 - 2400 - 1000 (monto_objetivo)
+    assert serie[-1]["saldo"] == pytest.approx(6430.0)
+
+
+def test_serie_es_monotona_en_fecha():
+    resultado = simular_flujo_de_caja(
+        saldo_actual=500.00,
+        ingresos=INGRESOS,
+        gastos=GASTOS,
+        hoy="2026-09-11",
+        fecha_objetivo="2026-10-13",
+        monto_objetivo=1000.00,
+    )
+    fechas = [p["fecha"] for p in resultado["serie"]]
+    assert fechas == sorted(fechas)

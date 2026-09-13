@@ -1,0 +1,304 @@
+import json
+import sys
+from datetime import date, timedelta
+
+import pytest
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+
+def _params(db_path) -> StdioServerParameters:
+    return StdioServerParameters(
+        command=sys.executable,
+        args=["-m", "me_alcanza.mcp_bank.server"],
+        env={"BANK_DB_PATH": str(db_path)},
+    )
+
+
+async def _call(session: ClientSession, name: str, args: dict):
+    result = await session.call_tool(name, args)
+    if result.is_error:
+        raise RuntimeError(result.content[0].text)
+    # NOTE: deviation from the brief. The installed `mcp` SDK's `_convert_to_content`
+    # returns raw (unquoted) text for `str` results and unrolls `list`/`tuple` results
+    # into one content block per item, so `result.content[0].text` is not reliably a
+    # single JSON document for every return type — only for `dict` returns. For `str`
+    # and `list[...]` return types this SDK version instead populates
+    # `result.structured_content` as `{"result": <value>}` (see
+    # mcp/server/mcpserver/utilities/func_metadata.py: `_convert_to_content` and
+    # `_create_output_model`). Prefer structured_content when present, unwrapping the
+    # `{"result": ...}` envelope; fall back to parsing content[0].text (used for plain
+    # `dict` returns, which this SDK version does not wrap in structured_content).
+    sc = result.structured_content
+    if sc is not None:
+        return sc["result"] if set(sc.keys()) == {"result"} else sc
+    return json.loads(result.content[0].text)
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_expone_las_tools_esperadas(tmp_path):
+    db_path = tmp_path / "test_banco.db"
+    async with stdio_client(_params(db_path)) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            tools = await session.list_tools()
+            names = {t.name for t in tools.tools}
+            assert names == {
+                "autenticar",
+                "get_saldo",
+                "get_cuenta",
+                "get_movimientos",
+                "get_ingresos_programados",
+                "get_gastos_fijos",
+                "get_metas",
+                "buscar_contacto",
+                "get_contacto",
+                "simular_flujo_de_caja",
+                "ejecutar_transferencia",
+                "crear_apartado",
+                "crear_contacto",
+                "actualizar_contacto",
+                "eliminar_contacto",
+                "crear_ingreso_programado",
+                "actualizar_ingreso_programado",
+                "eliminar_ingreso_programado",
+                "crear_gasto_fijo",
+                "actualizar_gasto_fijo",
+                "eliminar_gasto_fijo",
+                "crear_meta",
+                "actualizar_meta",
+                "eliminar_meta",
+                "listar_apartados",
+                "cancelar_apartado",
+                "get_resumen_movimientos",
+                "detectar_picos_gasto",
+                "generar_y_listar_sugerencias",
+                "marcar_sugerencia",
+                "calcular_score_salud_financiera",
+                "crear_conversacion",
+                "listar_conversaciones",
+                "obtener_mensajes_conversacion",
+                "agregar_mensaje_conversacion",
+                "eliminar_conversacion",
+            }
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_flujo_de_caja_y_apartado(tmp_path):
+    db_path = tmp_path / "test_banco.db"
+    async with stdio_client(_params(db_path)) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+
+            account_id = await _call(session, "autenticar", {"username": "ana", "password": "pass123"})
+            assert account_id == "ana"
+
+            saldo = await _call(session, "get_saldo", {"account_id": "ana"})
+            assert saldo == {"saldo": 500.00, "moneda": "MXN"}
+
+            simulacion = await _call(
+                session,
+                "simular_flujo_de_caja",
+                {
+                    "account_id": "ana",
+                    "fecha_objetivo": (date.today() + timedelta(days=32)).isoformat(),
+                    "monto_objetivo": 8000.0,
+                },
+            )
+            assert simulacion["alcanza"] is False
+            assert simulacion["margen"] == pytest.approx(-570.0)
+            assert simulacion["apartado_sugerido"]["periodicidad"] == "semanal"
+            assert simulacion["apartado_sugerido"]["monto_por_periodo"] == pytest.approx(142.5)
+
+            metas = await _call(session, "get_metas", {"account_id": "ana"})
+            meta_id = metas[0]["id"]
+
+            apartado = await _call(
+                session,
+                "crear_apartado",
+                {
+                    "account_id": "ana",
+                    "meta_id": meta_id,
+                    "monto_por_periodo": 142.5,
+                    "periodicidad": "semanal",
+                },
+            )
+            assert apartado["ok"] is True
+
+            saldo_actualizado = await _call(session, "get_saldo", {"account_id": "ana"})
+            assert saldo_actualizado["saldo"] == pytest.approx(500.00 - 142.5)
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_desambiguacion_de_contacto(tmp_path):
+    db_path = tmp_path / "test_banco.db"
+    async with stdio_client(_params(db_path)) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            contactos = await _call(session, "buscar_contacto", {"account_id": "ana", "query": "pepe"})
+            assert len(contactos) == 2
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_get_contacto_por_id_y_error_si_no_pertenece(tmp_path):
+    db_path = tmp_path / "test_banco.db"
+    async with stdio_client(_params(db_path)) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            contactos = await _call(session, "buscar_contacto", {"account_id": "ana", "query": "pepe"})
+            contacto = await _call(
+                session, "get_contacto", {"account_id": "ana", "contacto_id": contactos[0]["id"]}
+            )
+            assert contacto == contactos[0]
+
+            result = await session.call_tool(
+                "get_contacto", {"account_id": "luis", "contacto_id": contactos[0]["id"]}
+            )
+            assert result.is_error is True
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_reporta_error_para_cuenta_inexistente(tmp_path):
+    db_path = tmp_path / "test_banco.db"
+    async with stdio_client(_params(db_path)) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            result = await session.call_tool("get_saldo", {"account_id": "fantasma"})
+            assert result.is_error is True
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_crear_y_eliminar_contacto(tmp_path):
+    db_path = tmp_path / "test_banco.db"
+    async with stdio_client(_params(db_path)) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            contacto = await _call(
+                session,
+                "crear_contacto",
+                {
+                    "account_id": "ana",
+                    "nombre": "Sofía López",
+                    "alias": "Sofi",
+                    "cuenta_destino": "5566778899",
+                    "relacion": "amiga",
+                },
+            )
+            assert contacto["nombre"] == "Sofía López"
+
+            resultado = await _call(
+                session, "eliminar_contacto", {"account_id": "ana", "contacto_id": contacto["id"]}
+            )
+            assert resultado["ok"] is True
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_eliminar_meta_con_apartado_activo_reporta_error(tmp_path):
+    db_path = tmp_path / "test_banco.db"
+    async with stdio_client(_params(db_path)) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            metas = await _call(session, "get_metas", {"account_id": "ana"})
+            meta_id = metas[0]["id"]
+            await _call(
+                session,
+                "crear_apartado",
+                {"account_id": "ana", "meta_id": meta_id, "monto_por_periodo": 50.0, "periodicidad": "semanal"},
+            )
+            result = await session.call_tool("eliminar_meta", {"account_id": "ana", "meta_id": meta_id})
+            assert result.is_error is True
+            assert "apartados activos" in result.content[0].text
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_get_resumen_movimientos(tmp_path):
+    from datetime import date
+
+    db_path = tmp_path / "test_banco.db"
+    async with stdio_client(_params(db_path)) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            await _call(
+                session,
+                "ejecutar_transferencia",
+                {"origen_id": "luis", "destino_cuenta": "999999", "monto": 50.0, "concepto": "x"},
+            )
+            hoy = date.today().isoformat()
+            resumen = await _call(
+                session, "get_resumen_movimientos", {"account_id": "luis", "fecha_inicio": hoy, "fecha_fin": hoy}
+            )
+            assert resumen == [{"categoria": "transferencia_enviada", "total": -50.0, "count": 1}]
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_generar_y_listar_sugerencias_detecta_gasto_proximo(tmp_path):
+    db_path = tmp_path / "test_banco.db"
+    async with stdio_client(_params(db_path)) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            sugerencias = await _call(session, "generar_y_listar_sugerencias", {"account_id": "ana"})
+            tipos = {s["tipo"] for s in sugerencias}
+            # Los datos sembrados de "ana" tienen gastos fijos a 3-4 días con
+            # montos que superan el 30% de su saldo (500.00) -> debe disparar.
+            assert "gasto_fijo_proximo" in tipos
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_generar_y_listar_sugerencias_no_duplica(tmp_path):
+    db_path = tmp_path / "test_banco.db"
+    async with stdio_client(_params(db_path)) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            primera = await _call(session, "generar_y_listar_sugerencias", {"account_id": "ana"})
+            segunda = await _call(session, "generar_y_listar_sugerencias", {"account_id": "ana"})
+            assert len(segunda) == len(primera)
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_marcar_sugerencia(tmp_path):
+    db_path = tmp_path / "test_banco.db"
+    async with stdio_client(_params(db_path)) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            sugerencias = await _call(session, "generar_y_listar_sugerencias", {"account_id": "ana"})
+            sugerencia_id = sugerencias[0]["id"]
+            actualizada = await _call(
+                session, "marcar_sugerencia", {"account_id": "ana", "sugerencia_id": sugerencia_id, "nuevo_estado": "atendida"}
+            )
+            assert actualizada["estado"] == "atendida"
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_calcular_score_salud_financiera(tmp_path):
+    db_path = tmp_path / "test_banco.db"
+    async with stdio_client(_params(db_path)) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            resultado = await _call(session, "calcular_score_salud_financiera", {"account_id": "ana"})
+            assert 0 <= resultado["score"] <= 100
+            assert resultado["categoria"] in {"Saludable", "Atención", "Riesgo"}
+            assert isinstance(resultado["factores"], list)
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_conversaciones_flujo_completo(tmp_path):
+    db_path = tmp_path / "test_banco.db"
+    async with stdio_client(_params(db_path)) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            conversacion = await _call(session, "crear_conversacion", {"account_id": "ana", "titulo": "x"})
+            await _call(
+                session,
+                "agregar_mensaje_conversacion",
+                {"account_id": "ana", "conversacion_id": conversacion["id"], "rol": "user", "contenido": "hola"},
+            )
+            mensajes = await _call(
+                session, "obtener_mensajes_conversacion", {"account_id": "ana", "conversacion_id": conversacion["id"]}
+            )
+            assert len(mensajes) == 1
+            listado = await _call(session, "listar_conversaciones", {"account_id": "ana"})
+            assert len(listado) == 1
+            resultado = await session.call_tool(
+                "eliminar_conversacion", {"account_id": "ana", "conversacion_id": conversacion["id"]}
+            )
+            assert resultado.is_error is False

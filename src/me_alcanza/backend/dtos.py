@@ -1,0 +1,210 @@
+from datetime import date
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+Frecuencia = Literal["semanal", "quincenal", "mensual", "anual"]
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    token: str
+
+
+class ChatRequest(BaseModel):
+    mensaje: str
+    conversacion_id: int | None = None
+
+
+class ChatResponse(BaseModel):
+    a2ui_messages: list[dict]
+    conversacion_id: int
+
+
+class ConfirmActionRequest(BaseModel):
+    proposal_id: str
+    # Valores que el usuario editó en la tarjeta de confirmación (ej. un
+    # TextField con el nombre de un contacto nuevo) antes de confirmar. Solo
+    # se aplican a los campos editables del tipo de propuesta correspondiente
+    # — ver `_CAMPOS_EDITABLES_AL_CONFIRMAR` en orchestrator.py.
+    context: dict[str, object] | None = None
+
+
+class ConfirmActionResponse(BaseModel):
+    a2ui_messages: list[dict]
+
+
+class RejectActionRequest(BaseModel):
+    proposal_id: str
+
+
+class PropuestaResponse(BaseModel):
+    tipo: str
+    resumen: str
+
+
+class CuentaResponse(BaseModel):
+    titular: str
+    numero_cuenta: str
+    saldo: float
+    moneda: str
+
+
+class MovimientoResponse(BaseModel):
+    fecha: str
+    concepto: str
+    monto: float
+
+
+class ContactoCreate(BaseModel):
+    nombre: str
+    alias: str
+    cuenta_destino: str
+    relacion: str
+
+
+class ContactoUpdate(BaseModel):
+    nombre: str | None = None
+    alias: str | None = None
+    cuenta_destino: str | None = None
+    relacion: str | None = None
+
+
+class ContactoResponse(BaseModel):
+    id: int
+    nombre: str
+    alias: str
+    cuenta_destino: str
+    relacion: str
+
+
+class IngresoProgramadoCreate(BaseModel):
+    descripcion: str
+    monto: float = Field(gt=0)
+    frecuencia: Frecuencia
+    proxima_fecha: date
+
+
+class IngresoProgramadoUpdate(BaseModel):
+    descripcion: str | None = None
+    monto: float | None = Field(default=None, gt=0)
+    frecuencia: Frecuencia | None = None
+    proxima_fecha: date | None = None
+
+
+class IngresoProgramadoResponse(BaseModel):
+    id: int
+    descripcion: str
+    monto: float
+    frecuencia: str
+    proxima_fecha: str
+
+
+class GastoFijoCreate(BaseModel):
+    concepto: str
+    monto: float = Field(gt=0)
+    frecuencia: Frecuencia
+    proxima_fecha: date
+
+
+class GastoFijoUpdate(BaseModel):
+    concepto: str | None = None
+    monto: float | None = Field(default=None, gt=0)
+    frecuencia: Frecuencia | None = None
+    proxima_fecha: date | None = None
+
+
+class GastoFijoResponse(BaseModel):
+    id: int
+    concepto: str
+    monto: float
+    frecuencia: str
+    proxima_fecha: str
+
+
+class MetaCreate(BaseModel):
+    descripcion: str
+    monto_objetivo: float = Field(gt=0)
+    fecha_objetivo: date
+
+
+class MetaUpdate(BaseModel):
+    descripcion: str | None = None
+    monto_objetivo: float | None = Field(default=None, gt=0)
+    fecha_objetivo: date | None = None
+
+
+class MetaResponse(BaseModel):
+    id: int
+    descripcion: str
+    monto_objetivo: float
+    fecha_objetivo: str
+    monto_ahorrado: float
+
+
+class ApartadoCreate(BaseModel):
+    meta_id: int
+    monto_por_periodo: float = Field(gt=0)
+    periodicidad: Frecuencia
+
+
+class ApartadoResponse(BaseModel):
+    id: int
+    meta_id: int
+    monto_por_periodo: float
+    periodicidad: str
+    fecha_inicio: str
+    estado: str
+
+
+class SugerenciaResponse(BaseModel):
+    id: int
+    tipo: str
+    entidad_id: str
+    detalle: dict
+    estado: str
+    created_at: str
+    resuelta_at: str | None
+    # Solo se arma para estado="pendiente" (ver sugerencias_a2ui.py): la
+    # misma tarjeta A2UI que renderiza cualquier respuesta del chat, no un
+    # componente de React aparte.
+    a2ui_json: list[dict] | None = None
+
+
+class ScoreSaludResponse(BaseModel):
+    score: int
+    categoria: str
+    factores: list[str]
+
+
+class PropuestaSugerenciaResponse(BaseModel):
+    # Elaborada por el LLM bajo demanda (nunca automática) a partir de los
+    # hechos ya detectados de forma determinista — ver
+    # Orchestrator.generar_propuesta_sugerencia. Nunca contiene datos que el
+    # LLM no haya recibido como contexto.
+    propuesta: str
+
+
+class ConversacionResponse(BaseModel):
+    id: int
+    titulo: str
+    created_at: str
+    updated_at: str
+
+
+class MensajeResponse(BaseModel):
+    rol: str
+    contenido: str
+    created_at: str
+    # Solo se llena para turnos rol="model": el bloque A2UI reconstruido a
+    # partir del texto crudo persistido (ver Orchestrator.reparsear_mensaje_modelo).
+    # None cuando el turno es de usuario, o si ese texto viejo ya no parsea.
+    a2ui_json: list[dict] | None = None
+
+
+class CrearConversacionRequest(BaseModel):
+    titulo: str | None = None

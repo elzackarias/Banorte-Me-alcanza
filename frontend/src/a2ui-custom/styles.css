@@ -1,0 +1,530 @@
+/* Componentes A2UI propios (StatCard, BarChart, PlanDePago).
+   Reusan las variables --a2ui-* ya definidas en styles/index.css para
+   quedar visualmente integrados con el resto del catálogo básico. */
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--a2ui-spacing-m, 16px);
+  border-radius: var(--a2ui-border-radius, 12px);
+  border: var(--a2ui-border-width, 1px) solid var(--a2ui-color-border, #e2e8f0);
+  background: var(--a2ui-color-surface, #fff);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.06));
+}
+
+.stat-card-label {
+  margin: 0;
+  font-size: var(--a2ui-font-size-s, 14px);
+  color: var(--a2ui-color-secondary, #64748b);
+}
+
+.stat-card-value {
+  margin: 0;
+  font-size: var(--a2ui-font-size-2xl, 32px);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--a2ui-color-on-surface, #0f172a);
+}
+
+.stat-card-trend {
+  margin: 0;
+  font-size: var(--a2ui-font-size-s, 14px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-card-trend-arrow {
+  font-weight: 700;
+}
+
+.stat-card-positive .stat-card-value,
+.stat-card-positive .stat-card-trend {
+  color: var(--a2ui-color-success, #059669);
+}
+
+.stat-card-negative .stat-card-value,
+.stat-card-negative .stat-card-trend {
+  color: var(--a2ui-color-primary, #eb0029);
+}
+
+.stat-card-warning .stat-card-value,
+.stat-card-warning .stat-card-trend {
+  color: var(--a2ui-color-warning, #b45309);
+}
+
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--a2ui-spacing-s, 8px);
+  padding: var(--a2ui-spacing-m, 16px);
+  border-radius: var(--a2ui-border-radius, 12px);
+  border: var(--a2ui-border-width, 1px) solid var(--a2ui-color-border, #e2e8f0);
+  background: var(--a2ui-color-surface, #fff);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.06));
+}
+
+.bar-chart-title {
+  margin: 0 0 4px;
+  font-size: var(--a2ui-font-size-m, 16px);
+  font-weight: 600;
+}
+
+.bar-chart-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--a2ui-spacing-s, 8px);
+}
+
+.bar-chart-row {
+  display: grid;
+  grid-template-columns: minmax(72px, 30%) 1fr auto;
+  align-items: center;
+  gap: var(--a2ui-spacing-s, 8px);
+}
+
+.bar-chart-row-label {
+  font-size: var(--a2ui-font-size-s, 14px);
+  color: var(--a2ui-color-on-surface, #0f172a);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar-chart-row-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--a2ui-color-background, #f8fafc);
+  overflow: hidden;
+}
+
+.bar-chart-row-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--a2ui-color-primary, #eb0029);
+}
+
+.bar-chart-row-fill-positive {
+  background: var(--a2ui-color-success, #059669);
+}
+
+.bar-chart-row-fill-warning {
+  background: var(--a2ui-color-warning, #b45309);
+}
+
+.bar-chart-row-fill-negative {
+  background: var(--a2ui-color-primary, #eb0029);
+}
+
+.bar-chart-row-value {
+  font-size: var(--a2ui-font-size-s, 14px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.plan-de-pago {
+  display: flex;
+  flex-direction: column;
+  gap: var(--a2ui-spacing-s, 8px);
+  padding: var(--a2ui-spacing-m, 16px);
+  border-radius: var(--a2ui-border-radius, 12px);
+  border: var(--a2ui-border-width, 1px) solid var(--a2ui-color-border, #e2e8f0);
+  background: var(--a2ui-color-surface, #fff);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.06));
+}
+
+.plan-de-pago-title {
+  margin: 0;
+  font-size: var(--a2ui-font-size-m, 16px);
+  font-weight: 600;
+}
+
+.plan-de-pago-subtitle {
+  margin: 0 0 4px;
+  font-size: var(--a2ui-font-size-s, 14px);
+  color: var(--a2ui-color-secondary, #64748b);
+}
+
+.plan-de-pago-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--a2ui-spacing-s, 8px);
+}
+
+.plan-de-pago-option {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--a2ui-spacing-m, 16px);
+  padding: var(--a2ui-spacing-s, 8px) var(--a2ui-spacing-m, 16px);
+  border-radius: var(--a2ui-border-radius, 12px);
+  border: var(--a2ui-border-width, 1px) solid var(--a2ui-color-border, #e2e8f0);
+  background: var(--a2ui-color-input, #fff);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.plan-de-pago-option:hover {
+  border-color: var(--a2ui-color-primary, #eb0029);
+}
+
+.plan-de-pago-option-selected {
+  border-color: var(--a2ui-color-primary, #eb0029);
+  border-width: 2px;
+  background: color-mix(in srgb, var(--a2ui-color-primary, #eb0029) 6%, var(--a2ui-color-input, #fff));
+}
+
+.plan-de-pago-option-highlighted:not(.plan-de-pago-option-selected) {
+  border-style: dashed;
+}
+
+.plan-de-pago-option-label {
+  font-weight: 600;
+}
+
+.plan-de-pago-option-detail {
+  font-size: var(--a2ui-font-size-s, 14px);
+  color: var(--a2ui-color-secondary, #64748b);
+}
+
+.plan-de-pago-option-amount {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.line-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--a2ui-spacing-s, 8px);
+  padding: var(--a2ui-spacing-m, 16px);
+  border-radius: var(--a2ui-border-radius, 12px);
+  border: var(--a2ui-border-width, 1px) solid var(--a2ui-color-border, #e2e8f0);
+  background: var(--a2ui-color-surface, #fff);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.06));
+}
+
+.line-chart-title {
+  margin: 0;
+  font-size: var(--a2ui-font-size-m, 16px);
+  font-weight: 600;
+}
+
+.line-chart-svg {
+  width: 100%;
+  height: 220px;
+  overflow: visible;
+}
+
+.line-chart-area {
+  fill: color-mix(in srgb, var(--a2ui-color-primary, #eb0029) 10%, transparent);
+  stroke: none;
+}
+
+.line-chart-line {
+  fill: none;
+  stroke: var(--a2ui-color-primary, #eb0029);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.line-chart-threshold {
+  stroke: var(--a2ui-color-secondary, #64748b);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.line-chart-threshold-label {
+  font-size: 10px;
+  fill: var(--a2ui-color-secondary, #64748b);
+  text-anchor: end;
+}
+
+.line-chart-dot {
+  fill: var(--a2ui-color-primary, #eb0029);
+  stroke: var(--a2ui-color-surface, #fff);
+  stroke-width: 2;
+}
+
+.line-chart-dot-negative {
+  fill: var(--a2ui-color-primary, #eb0029);
+}
+
+.line-chart-dot-warning {
+  fill: var(--a2ui-color-warning, #b45309);
+}
+
+.line-chart-dot-positive {
+  fill: var(--a2ui-color-success, #059669);
+}
+
+.line-chart-value-label {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--a2ui-color-on-surface, #0f172a);
+  text-anchor: middle;
+}
+
+.line-chart-x-label {
+  font-size: 10px;
+  fill: var(--a2ui-color-secondary, #64748b);
+  text-anchor: middle;
+}
+
+.apartado-planner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--a2ui-spacing-s, 8px);
+  padding: var(--a2ui-spacing-m, 16px);
+  border-radius: var(--a2ui-border-radius, 12px);
+  border: var(--a2ui-border-width, 1px) solid var(--a2ui-color-border, #e2e8f0);
+  background: var(--a2ui-color-surface, #fff);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.06));
+}
+
+.apartado-planner-title {
+  margin: 0;
+  font-size: var(--a2ui-font-size-m, 16px);
+  font-weight: 600;
+}
+
+.apartado-planner-subtitle {
+  margin: 0 0 4px;
+  font-size: var(--a2ui-font-size-s, 14px);
+  color: var(--a2ui-color-secondary, #64748b);
+}
+
+.apartado-planner-result {
+  display: flex;
+  align-items: baseline;
+  gap: var(--a2ui-spacing-s, 8px);
+  flex-wrap: wrap;
+}
+
+.apartado-planner-periodos {
+  font-size: var(--a2ui-font-size-2xl, 32px);
+  font-weight: 700;
+  color: var(--a2ui-color-primary, #eb0029);
+  line-height: 1;
+}
+
+.apartado-planner-periodos-label {
+  font-size: var(--a2ui-font-size-s, 14px);
+  color: var(--a2ui-color-secondary, #64748b);
+}
+
+.apartado-planner-slider {
+  width: 100%;
+  accent-color: var(--a2ui-color-primary, #eb0029);
+  cursor: pointer;
+}
+
+.apartado-planner-range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--a2ui-font-size-xs, 12px);
+  color: var(--a2ui-color-secondary, #64748b);
+  margin-top: -8px;
+}
+
+.apartado-planner-total {
+  margin: 4px 0 0;
+  font-size: var(--a2ui-font-size-s, 14px);
+  font-weight: 600;
+}
+
+.apartado-planner-total-ok {
+  color: var(--a2ui-color-success, #059669);
+}
+
+.apartado-planner-total-corto {
+  color: var(--a2ui-color-warning, #b45309);
+}
+
+.donut-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--a2ui-spacing-s, 8px);
+  padding: var(--a2ui-spacing-m, 16px);
+  border-radius: var(--a2ui-border-radius, 12px);
+  border: var(--a2ui-border-width, 1px) solid var(--a2ui-color-border, #e2e8f0);
+  background: var(--a2ui-color-surface, #fff);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.06));
+}
+
+.donut-chart-title {
+  margin: 0;
+  font-size: var(--a2ui-font-size-m, 16px);
+  font-weight: 600;
+}
+
+.donut-chart-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--a2ui-spacing-m, 16px);
+}
+
+.donut-chart-svg {
+  flex-shrink: 0;
+}
+
+.donut-chart-center-value {
+  font-size: 20px;
+  font-weight: 700;
+  fill: var(--a2ui-color-on-surface, #0f172a);
+}
+
+.donut-chart-center-label {
+  font-size: 11px;
+  fill: var(--a2ui-color-secondary, #64748b);
+}
+
+.donut-chart-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.donut-chart-legend-row {
+  display: grid;
+  grid-template-columns: 10px 1fr auto auto;
+  align-items: center;
+  gap: var(--a2ui-spacing-s, 8px);
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  transition: background 0.15s ease;
+}
+
+.donut-chart-legend-row:hover {
+  background: var(--a2ui-color-background, #f8fafc);
+}
+
+.donut-chart-legend-row-selected {
+  background: color-mix(in srgb, var(--a2ui-color-primary, #eb0029) 8%, transparent);
+}
+
+.donut-chart-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.donut-chart-legend-label {
+  font-size: var(--a2ui-font-size-s, 14px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.donut-chart-legend-pct {
+  font-size: var(--a2ui-font-size-xs, 12px);
+  color: var(--a2ui-color-secondary, #64748b);
+}
+
+.donut-chart-legend-value {
+  font-size: var(--a2ui-font-size-s, 14px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.budget-allocator {
+  display: flex;
+  flex-direction: column;
+  gap: var(--a2ui-spacing-s, 8px);
+  padding: var(--a2ui-spacing-m, 16px);
+  border-radius: var(--a2ui-border-radius, 12px);
+  border: var(--a2ui-border-width, 1px) solid var(--a2ui-color-border, #e2e8f0);
+  background: var(--a2ui-color-surface, #fff);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.06));
+}
+
+.budget-allocator-title {
+  margin: 0;
+  font-size: var(--a2ui-font-size-m, 16px);
+  font-weight: 600;
+}
+
+.budget-allocator-subtitle {
+  margin: 0 0 4px;
+  font-size: var(--a2ui-font-size-s, 14px);
+  color: var(--a2ui-color-secondary, #64748b);
+}
+
+.budget-allocator-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.budget-allocator-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: var(--a2ui-border-width, 1px) solid var(--a2ui-color-border, #e2e8f0);
+  background: var(--a2ui-color-input, #fff);
+  font: inherit;
+  font-size: var(--a2ui-font-size-s, 14px);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.budget-allocator-chip-selected {
+  border-color: var(--a2ui-color-primary, #eb0029);
+  border-width: 2px;
+  background: color-mix(in srgb, var(--a2ui-color-primary, #eb0029) 6%, var(--a2ui-color-input, #fff));
+  font-weight: 600;
+}
+
+.budget-allocator-result {
+  display: flex;
+  align-items: baseline;
+  gap: var(--a2ui-spacing-s, 8px);
+  flex-wrap: wrap;
+}
+
+.budget-allocator-monto {
+  font-size: var(--a2ui-font-size-2xl, 32px);
+  font-weight: 700;
+  color: var(--a2ui-color-primary, #eb0029);
+  line-height: 1;
+}
+
+.budget-allocator-monto-label {
+  font-size: var(--a2ui-font-size-s, 14px);
+  color: var(--a2ui-color-secondary, #64748b);
+}
+
+.budget-allocator-slider {
+  width: 100%;
+  accent-color: var(--a2ui-color-primary, #eb0029);
+  cursor: pointer;
+}
+
+.budget-allocator-range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--a2ui-font-size-xs, 12px);
+  color: var(--a2ui-color-secondary, #64748b);
+  margin-top: -8px;
+}
+
+.budget-allocator-restante {
+  margin: 4px 0 0;
+  font-size: var(--a2ui-font-size-s, 14px);
+}
