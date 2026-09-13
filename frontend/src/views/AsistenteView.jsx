@@ -25,7 +25,7 @@ import ConfirmActionModal from '../components/ConfirmActionModal.jsx';
 import ConversationSidebar from '../components/ConversationSidebar.jsx';
 import { useAuth } from '../auth/AuthContext.jsx';
 import logo from '../assets/images/logo.svg';
-import { Mic, Square, Volume2 } from 'lucide-react';
+import { Menu, Mic, Square, Volume2 } from 'lucide-react';
 
 // Las notificaciones/sugerencias ya no viven aquí: tienen su propio tab
 // "Atención" (ver AtencionView), donde se pueden filtrar y cada una trae su
@@ -47,6 +47,11 @@ export default function AsistenteView() {
   // Confirmación pendiente antes de ejecutar confirmar_accion (ver
   // confirmActionWithModal más abajo): { resumen, onConfirm, onCancel }.
   const [pendingConfirmation, setPendingConfirmation] = useState(null);
+  // En mobile el sidebar de conversaciones es un drawer superpuesto (ver
+  // .conversation-sidebar en index.css), no una columna fija: este estado
+  // controla si está abierto. En desktop la clase que dispara no tiene
+  // efecto (el sidebar siempre está visible ahí).
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const { data: conversaciones, reload: reloadConversaciones } = useApiResource(
     () => apiClient.getConversaciones(token),
@@ -189,9 +194,11 @@ export default function AsistenteView() {
     setConversacionId(null);
     setTurns([]);
     setErrorMessage(null);
+    setSidebarOpen(false);
   }
 
   async function handleSelectConversacion(id) {
+    setSidebarOpen(false);
     if (id === conversacionId) {
       return;
     }
@@ -219,8 +226,27 @@ export default function AsistenteView() {
         activeId={conversacionId}
         onSelect={handleSelectConversacion}
         onNueva={handleNuevaConversacion}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
+      {sidebarOpen && (
+        <div
+          className="conversation-sidebar-backdrop"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
       <div className="chat-view">
+        <div className="chat-mobile-header">
+          <button
+            type="button"
+            className="chat-sidebar-toggle"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Ver historial de conversaciones"
+          >
+            <Menu size={20} />
+          </button>
+        </div>
         <main className="chat-surfaces">
           {(turns.length === 0 && !sending) && (
             <AsistenteEmptyState onSugerencia={submitMensaje} />

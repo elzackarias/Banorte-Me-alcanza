@@ -1013,6 +1013,27 @@ body {
   font-size: var(--a2ui-font-size-xs);
 }
 
+/* Estas filas son flex row justify-content:space-between con un <div> sin
+   clase como primer hijo (concepto/detalle + fecha) — sin min-width:0 ese
+   div nunca encoge por debajo del ancho de su texto y en pantallas angostas
+   desborda la fila entera en vez de truncar. */
+.yo-movimiento > div:first-child,
+.yo-apartado > div:first-child,
+.yo-recurrente > div:first-child,
+.yo-contacto > div:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.yo-movimiento > div:first-child > p,
+.yo-apartado > div:first-child > p,
+.yo-recurrente > div:first-child > p,
+.yo-contacto > div:first-child > p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .asistente-view {
   flex: 1;
   display: flex;
@@ -1029,8 +1050,15 @@ body {
   overflow-y: auto;
 }
 
-.conversation-nueva {
+.conversation-sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: var(--a2ui-spacing-s);
   margin: var(--a2ui-spacing-m);
+}
+
+.conversation-nueva {
+  flex: 1;
   padding: var(--a2ui-spacing-s) var(--a2ui-spacing-m);
   border: var(--a2ui-border-width) solid var(--color-primary);
   border-radius: calc(var(--a2ui-border-radius) / 2);
@@ -1047,6 +1075,42 @@ body {
 .conversation-nueva:hover {
   background: var(--color-primary);
   color: var(--color-on-primary);
+}
+
+/* Botón para cerrar el drawer en mobile (ver media query de abajo); en
+   desktop el sidebar es una columna fija y este botón no tiene sentido. */
+.conversation-sidebar-close {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: var(--a2ui-spacing-xs);
+  border: var(--a2ui-border-width) solid var(--a2ui-color-border);
+  border-radius: calc(var(--a2ui-border-radius) / 2);
+  background: none;
+  color: var(--color-secondary);
+  cursor: pointer;
+}
+
+/* Oculto por defecto (desktop, donde el sidebar siempre está visible);
+   se muestra dentro de la media query mobile de abajo. */
+.chat-mobile-header {
+  display: none;
+}
+
+.chat-sidebar-toggle {
+  align-items: center;
+  justify-content: center;
+  padding: var(--a2ui-spacing-s);
+  border: var(--a2ui-border-width) solid var(--a2ui-color-border);
+  border-radius: calc(var(--a2ui-border-radius) / 2);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  cursor: pointer;
+}
+
+.conversation-sidebar-backdrop {
+  display: none;
 }
 
 .conversation-list {
@@ -1467,4 +1531,105 @@ body {
 .chat-animation {
   width: fit-content;
   margin-top: -15px;
+}
+
+/* ---------------------------------------------------------------------
+   Mobile (≤768px): el navbar pasa a dos filas y el sidebar de
+   conversaciones del Asistente deja de ser una columna fija para
+   convertirse en un drawer superpuesto con backdrop, abierto con el botón
+   de .chat-sidebar-toggle (ver AsistenteView.jsx / ConversationSidebar.jsx).
+   ------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .app-navbar {
+    flex-wrap: wrap;
+    row-gap: var(--a2ui-spacing-s);
+  }
+
+  /* La marca y el logout se quedan en la primera fila; las tabs bajan a su
+     propia fila de ancho completo en vez de comprimirse hasta desbordar. */
+  .app-navbar-tabs {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .app-navbar-tabs .app-navbar-tab {
+    flex: 1;
+    text-align: center;
+    padding: var(--a2ui-spacing-xs) var(--a2ui-spacing-s);
+  }
+
+  .conversation-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(82vw, 300px);
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .conversation-sidebar-open {
+    transform: translateX(0);
+  }
+
+  .conversation-sidebar-close {
+    display: inline-flex;
+  }
+
+  .conversation-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    z-index: 35;
+  }
+
+  .chat-mobile-header {
+    display: flex;
+    padding: var(--a2ui-spacing-s) var(--a2ui-spacing-m) 0;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Mobile chico (≤640px): el navbar y las vistas usan los mismos paddings
+   grandes que en desktop — aquí se ajustan a algo cómodo en una pantalla
+   de teléfono, sin cambiar la estructura.
+   ------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .app-navbar {
+    padding: var(--a2ui-spacing-s) var(--a2ui-spacing-m);
+    gap: var(--a2ui-spacing-s);
+  }
+
+  .app-navbar-brand {
+    font-size: var(--a2ui-font-size-m);
+  }
+
+  .app-navbar-tagline {
+    display: none;
+  }
+
+  .chat-surfaces,
+  .yo-content,
+  .atencion-view {
+    padding: var(--a2ui-spacing-m);
+  }
+
+  .chat-input {
+    padding: var(--a2ui-spacing-s) var(--a2ui-spacing-m);
+  }
+
+  .chat-message-user {
+    max-width: 90%;
+  }
+
+  .confirm-modal-card {
+    padding: var(--a2ui-spacing-l);
+  }
+
+  .login-form {
+    padding: var(--a2ui-spacing-l);
+  }
 }
